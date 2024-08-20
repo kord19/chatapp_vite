@@ -5,7 +5,8 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -16,10 +17,12 @@ import {
   query,
   serverTimestamp,
 } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, app } from '../firebase';
 import { FaSun, FaMoon } from 'react-icons/fa';
 
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 function App() {
   const [user, setUser] = useState(null);
@@ -30,6 +33,7 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [avatar, setAvatar] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, 'messages'), orderBy('timestamp'));
@@ -58,14 +62,18 @@ function App() {
     setImage(event.target.files[0]);
   };
 
+  const handleAvatarChange = (event) => {
+    setAvatar(event.target.files[0]);
+  };
+
   const sendMessage = async () => {
     if (newMessage.trim() === '' && !image) return;
 
     let imageUrl = '';
     if (image) {
-      const storageRef = storage.ref(`images/${image.name}`);
-      await storageRef.put(image);
-      imageUrl = await storageRef.getDownloadURL();
+      const storageRef = ref(storage, `images/${image.name}`);
+      await uploadBytes(storageRef, image);
+      imageUrl = await getDownloadURL(storageRef);
     }
 
     await addDoc(collection(db, 'messages'), {
@@ -93,7 +101,21 @@ function App() {
 
   const handleEmailSignUp = async () => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      let avatarUrl = '';
+      if (avatar) {
+        const avatarRef = ref(storage, `avatars/${avatar.name}`);
+        await uploadBytes(avatarRef, avatar);
+        avatarUrl = await getDownloadURL(avatarRef);
+      }
+
+      await updateProfile(user, {
+        photoURL: avatarUrl,
+      });
+
+      setUser(user);
     } catch (error) {
       setError(error.message);
     }
@@ -198,6 +220,11 @@ function App() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
+            />
+            <input
+              type="file"
+              className="avatar-input"
+              onChange={handleAvatarChange}
             />
             <button className='login-button' onClick={handleEmailLogin}>
               Login with Email
