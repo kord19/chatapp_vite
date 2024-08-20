@@ -4,6 +4,8 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -14,7 +16,7 @@ import {
   query,
   serverTimestamp,
 } from 'firebase/firestore';
-import { auth, app, storage } from '../firebase';
+import { auth, app } from '../firebase';
 import { FaSun, FaMoon } from 'react-icons/fa';
 
 const db = getFirestore(app);
@@ -25,6 +27,9 @@ function App() {
   const [newMessage, setNewMessage] = useState('');
   const [darkMode, setDarkMode] = useState(false);
   const [image, setImage] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const q = query(collection(db, 'messages'), orderBy('timestamp'));
@@ -83,6 +88,22 @@ function App() {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const handleEmailSignUp = async () => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  const handleEmailLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      setError(error.message);
     }
   };
 
@@ -159,12 +180,34 @@ function App() {
           </div>
         </div>
       ) : (
-        <button
-          className='login-button'
-          onClick={handleGoogleLogin}
-        >
-          Login with Google
-        </button>
+        <div className="login-container">
+          <button className='login-button' onClick={handleGoogleLogin}>
+            Login with Google
+          </button>
+          <div className="email-login-container">
+            <input
+              type="email"
+              className="email-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+            />
+            <input
+              type="password"
+              className="password-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+            />
+            <button className='login-button' onClick={handleEmailLogin}>
+              Login with Email
+            </button>
+            <button className='signup-button' onClick={handleEmailSignUp}>
+              Sign Up with Email
+            </button>
+            {error && <div className="error-message">{error}</div>}
+          </div>
+        </div>
       )}
     </div>
   );
