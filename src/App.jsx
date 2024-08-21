@@ -68,14 +68,14 @@ function App() {
 
   const sendMessage = async () => {
     if (newMessage.trim() === '' && !image) return;
-
+  
     let imageUrl = '';
     if (image) {
       const storageRef = ref(storage, `images/${image.name}`);
       await uploadBytes(storageRef, image);
       imageUrl = await getDownloadURL(storageRef);
     }
-
+  
     await addDoc(collection(db, 'messages'), {
       uid: user.uid,
       photoURL: user.photoURL,
@@ -84,7 +84,7 @@ function App() {
       imageUrl: imageUrl,
       timestamp: serverTimestamp(),
     });
-
+  
     setNewMessage('');
     setImage(null);
   };
