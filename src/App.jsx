@@ -49,10 +49,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+      }
     });
-    return unsubscribe;
   }, []);
 
   const handleImageChange = (event) => {
@@ -62,15 +65,13 @@ function App() {
   const handleAvatarChange = async (event) => {
     const avatarFile = event.target.files[0];
     if (avatarFile) {
-      const userId = user.uid; 
+      const userId = user.uid;
       const storageRef = ref(storage, `avatars/${userId}/${avatarFile.name}`);
-  
+
       try {
         await uploadBytes(storageRef, avatarFile);
         const avatarUrl = await getDownloadURL(storageRef);
-        await updateProfile(user, {
-          photoURL: avatarUrl,
-        });
+        await updateProfile(user, { photoURL: avatarUrl });
         setUser({ ...user, photoURL: avatarUrl });
         console.log('Avatar atualizado com sucesso:', avatarUrl);
       } catch (error) {
@@ -81,18 +82,14 @@ function App() {
 
   const sendMessage = async () => {
     if (newMessage.trim() === '' && !image) return;
-
+  
     let imageUrl = '';
     if (image) {
       const storageRef = ref(storage, `images/${image.name}`);
-      try {
-        await uploadBytes(storageRef, image);
-        imageUrl = await getDownloadURL(storageRef);
-      } catch (error) {
-        console.error('Erro ao fazer upload da imagem:', error);
-      }
+      await uploadBytes(storageRef, image);
+      imageUrl = await getDownloadURL(storageRef);
     }
-
+  
     await addDoc(collection(db, 'messages'), {
       uid: user.uid,
       photoURL: user.photoURL,
@@ -101,17 +98,18 @@ function App() {
       imageUrl: imageUrl,
       timestamp: serverTimestamp(),
     });
-
+  
     setNewMessage('');
     setImage(null);
   };
 
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
+
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
-      setError(error.message);
+      console.log(error);
     }
   };
 
@@ -120,15 +118,14 @@ function App() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      let avatarUrl = '';
       if (avatar) {
         const avatarRef = ref(storage, `avatars/${user.uid}/${avatar.name}`);
         await uploadBytes(avatarRef, avatar);
-        const avatarUrl = await getDownloadURL(avatarRef);
-        await updateProfile(user, {
-          photoURL: avatarUrl,
-        });
+        avatarUrl = await getDownloadURL(avatarRef);
       }
 
+      await updateProfile(user, { photoURL: avatarUrl });
       setUser(user);
     } catch (error) {
       setError(error.message);
@@ -148,16 +145,16 @@ function App() {
   };
 
   return (
-    <div className={`app-container ${darkMode ? 'dark-mode' : 'light-mode'}`}>
+    <div className={`app-container ${user ? 'logged-in' : 'logged-out'} ${darkMode ? 'dark-mode' : 'light-mode'}`}>
       <button className="theme-toggle-button" onClick={toggleTheme}>
         {darkMode ? <FaSun /> : <FaMoon />}
       </button>
       {user ? (
         <div className='chat-container'>
           <div className='user-info'>
-            <img src={user.photoURL || 'default-avatar-url'} alt="User Avatar" className="user-avatar" />
             Logged in as {user.displayName}
           </div>
+
           <div className='message-input-container'>
             <input
               type='file'
@@ -177,12 +174,14 @@ function App() {
               Send
             </button>
           </div>
+
           <button
             className='logout-button'
             onClick={() => auth.signOut()}
           >
             Logout
           </button>
+
           <div className='messages-container'>
             {messages.map((msg) => (
               <div
@@ -194,7 +193,7 @@ function App() {
                 <div className='message'>
                   <img
                     className='avatar'
-                    src={msg.data.photoURL || 'default-avatar-url'}
+                    src={msg.data.photoURL}
                     alt='User Avatar'
                   />
                   <div className='message-content'>
@@ -236,7 +235,7 @@ function App() {
             <input
               type="file"
               className="avatar-input"
-              onChange={handleAvatarChange}
+              onChange={(e) => setAvatar(e.target.files[0])}
             />
             <button className='login-button' onClick={handleEmailLogin}>
               Login with Email
