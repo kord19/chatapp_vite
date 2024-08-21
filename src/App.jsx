@@ -34,6 +34,8 @@ function App() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [avatar, setAvatar] = useState(null);
+  const [modalContent, setModalContent] = useState(null); // Adicionado para o modal
+  const [modalVisible, setModalVisible] = useState(false); // Adicionado para o modal
 
   useEffect(() => {
     const q = query(collection(db, 'messages'), orderBy('timestamp'));
@@ -145,6 +147,16 @@ function App() {
     setDarkMode(!darkMode);
   };
 
+  const handleFileClick = (url, type) => {
+    setModalContent({ url, type });
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    setModalContent(null);
+  };
+
   return (
     <div className={`app-container ${user ? 'logged-in' : 'logged-out'} ${darkMode ? 'dark-mode' : 'light-mode'}`}>
       <button className="theme-toggle-button" onClick={toggleTheme}>
@@ -169,107 +181,87 @@ function App() {
             />
             <input
               className='message-input'
+              type='text'
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder='Enter your message...'
+              placeholder='Digite uma mensagem...'
             />
-            <button
-              className='send-button'
-              onClick={sendMessage}
-            >
+            <button className='send-button' onClick={sendMessage}>
               Enviar
             </button>
           </div>
 
-          <button
-            className='logout-button'
-            onClick={() => auth.signOut()}
-          >
-            Logout
-          </button>
-
           <div className='messages-container'>
-            {messages.map((msg) => (
+            {messages.map((message) => (
               <div
-                key={msg.id}
-                className={`message-wrapper ${
-                  msg.data.uid === user.uid ? 'message-sent' : 'message-received'
-                }`}
+                key={message.id}
+                className={`message ${message.data.uid === user.uid ? 'message-sent' : 'message-received'}`}
               >
-                <div className='message'>
+                {message.data.photoURL && (
                   <img
                     className='avatar'
-                    src={msg.data.photoURL}
-                    alt='User Avatar'
+                    src={message.data.photoURL}
+                    alt='Avatar'
                   />
-                  <div className='message-content'>
-                    <span className='message-username'>{msg.data.displayName}</span>
-                    <p className='message-text'>{msg.data.text}</p>
-                    {msg.data.fileUrl && (
-                      msg.data.fileType.startsWith('image/') ? (
-                        <img
-                          className='message-file'
-                          src={msg.data.fileUrl}
-                          alt='Sent'
-                        />
-                      ) : msg.data.fileType.startsWith('video/') ? (
-                        <video
-                          className='message-file'
-                          controls
-                        >
-                          <source src={msg.data.fileUrl} type={msg.data.fileType} />
-                          Your browser does not support the video tag.
-                        </video>
-                      ) : (
-                        <a
-                          className='message-file'
-                          href={msg.data.fileUrl}
-                          target='_blank'
-                          rel='noopener noreferrer'
-                        >
-                          Download Arquivo
-                        </a>
-                      )
-                    )}
-                  </div>
+                )}
+                <div className='message-content'>
+                  <p className='message-username'>
+                    {message.data.displayName}
+                  </p>
+                  <p>{message.data.text}</p>
+                  {message.data.fileUrl && message.data.fileType.startsWith('image/') && (
+                    <img
+                      className='message-image'
+                      src={message.data.fileUrl}
+                      alt='Anexo'
+                      onClick={() => handleFileClick(message.data.fileUrl, 'image')}
+                    />
+                  )}
+                  {message.data.fileUrl && message.data.fileType.startsWith('video/') && (
+                    <video
+                      className='message-video'
+                      src={message.data.fileUrl}
+                      controls
+                      onClick={() => handleFileClick(message.data.fileUrl, 'video')}
+                    />
+                  )}
                 </div>
               </div>
             ))}
           </div>
+
+          {modalVisible && (
+            <div className='modal show' onClick={closeModal}>
+              <div className='modal-overlay'></div>
+              <div className='modal-content'>
+                {modalContent && modalContent.type === 'image' && (
+                  <img src={modalContent.url} alt='Zoomed' />
+                )}
+                {modalContent && modalContent.type === 'video' && (
+                  <video src={modalContent.url} controls />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="login-container">
-          <button className='login-button' onClick={handleGoogleLogin}>
-            Login with Google
-          </button>
-          <div className="email-login-container">
-            <input
-              type="email"
-              className="email-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-            />
-            <input
-              type="password"
-              className="password-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-            />
-            <input
-              type="file"
-              className="avatar-input"
-              onChange={(e) => setAvatar(e.target.files[0])}
-            />
-            <button className='login-button' onClick={handleEmailLogin}>
-              Login with Email
-            </button>
-            <button className='signup-button' onClick={handleEmailSignUp}>
-              Sign Up with Email
-            </button>
-            {error && <div className="error-message">{error}</div>}
-          </div>
+        <div className='auth-container'>
+          <button onClick={handleGoogleLogin}>Login com Google</button>
+          <input
+            type='text'
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder='Email'
+          />
+          <input
+            type='password'
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder='Senha'
+          />
+          <button onClick={handleEmailSignUp}>Criar Conta</button>
+          <button onClick={handleEmailLogin}>Login</button>
+          {error && <p>{error}</p>}
         </div>
       )}
     </div>
