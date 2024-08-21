@@ -62,9 +62,29 @@ function App() {
     setImage(event.target.files[0]);
   };
 
-  const handleAvatarChange = (event) => {
-    setAvatar(event.target.files[0]);
+  const handleAvatarChange = async (event) => {
+    const avatarFile = event.target.files[0];
+    
+    if (avatarFile) {
+      const userId = user.uid;
+      const storageRef = ref(storage, `avatars/${userId}/${avatarFile.name}`);
+      
+      try {
+        await uploadBytes(storageRef, avatarFile);
+        const avatarUrl = await getDownloadURL(storageRef);
+        
+        // Atualizar o perfil do usuário com a URL do novo avatar
+        await updateProfile(user, {
+          photoURL: avatarUrl,
+        });
+  
+        console.log('Avatar atualizado com sucesso');
+      } catch (error) {
+        console.error('Erro ao atualizar avatar:', error);
+      }
+    }
   };
+  
 
   const sendMessage = async () => {
     if (newMessage.trim() === '' && !image) return;
