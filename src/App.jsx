@@ -156,24 +156,30 @@ function App() {
           </div>
 
           <div className='message-input-container'>
-            <input
-              type='file'
-              className='file-input'
-              onChange={handleImageChange}
-            />
-            <input
-              className='message-input'
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder='Enter your message...'
-            />
-            <button
-              className='send-button'
-              onClick={sendMessage}
-            >
-              Send
-            </button>
-          </div>
+  <label htmlFor='file-input' className='file-input-label'>
+    <i className="fas fa-image"></i> {/* Ícone opcional */}
+    Escolher Imagem
+  </label>
+  <input
+    type='file'
+    id='file-input'
+    className='file-input'
+    onChange={handleImageChange}
+  />
+  <input
+    className='message-input'
+    value={newMessage}
+    onChange={(e) => setNewMessage(e.target.value)}
+    placeholder='Enter your message...'
+  />
+  <button
+    className='send-button'
+    onClick={sendMessage}
+  >
+    Enviar
+  </button>
+</div>
+
 
           <button
             className='logout-button'

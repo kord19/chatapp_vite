@@ -245,3 +245,50 @@ body {
     width: 100%;
   }
 }
+
+
+/* Estilos para o input de arquivo */
+.file-input {
+  display: none; /* Ocultar o input padrão */
+}
+
+.file-input-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #4c8bf5; /* Cor de fundo */
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s, color 0.3s;
+  font-weight: bold;
+  margin-right: 1rem;
+}
+
+.file-input-label:hover {
+  background-color: #366fd4;
+}
+
+/* Adicionar um ícone ao label */
+.file-input-label::before {
+  content: "\f1c6"; /* Código do ícone para o FontAwesome (imagem) */
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  margin-right: 0.5rem;
+  font-size: 18px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .message-input-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .file-input-label {
+    margin-bottom: 0.5rem;
+    width: 100%;
+    text-align: center;
+  }
+}
