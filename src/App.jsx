@@ -29,7 +29,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [darkMode, setDarkMode] = useState(false);
-  const [image, setImage] = useState(null);
+  const [file, setFile] = useState(null); // Alterado para suportar imagens e vídeos
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -58,8 +58,8 @@ function App() {
     });
   }, []);
 
-  const handleImageChange = (event) => {
-    setImage(event.target.files[0]);
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
   };
 
   const handleAvatarChange = async (event) => {
@@ -81,13 +81,13 @@ function App() {
   };
 
   const sendMessage = async () => {
-    if (newMessage.trim() === '' && !image) return;
+    if (newMessage.trim() === '' && !file) return;
   
-    let imageUrl = '';
-    if (image) {
-      const storageRef = ref(storage, `images/${image.name}`);
-      await uploadBytes(storageRef, image);
-      imageUrl = await getDownloadURL(storageRef);
+    let fileUrl = '';
+    if (file) {
+      const storageRef = ref(storage, `files/${file.name}`);
+      await uploadBytes(storageRef, file);
+      fileUrl = await getDownloadURL(storageRef);
     }
   
     await addDoc(collection(db, 'messages'), {
@@ -95,12 +95,13 @@ function App() {
       photoURL: user.photoURL,
       displayName: user.displayName,
       text: newMessage,
-      imageUrl: imageUrl,
+      fileUrl: fileUrl,
+      fileType: file ? file.type : '', // Adiciona o tipo de arquivo
       timestamp: serverTimestamp(),
     });
   
     setNewMessage('');
-    setImage(null);
+    setFile(null);
   };
 
   const handleGoogleLogin = async () => {
@@ -156,30 +157,29 @@ function App() {
           </div>
 
           <div className='message-input-container'>
-  <label htmlFor='file-input' className='file-input-label'>
-    <i className="fas fa-image"></i> {/* Ícone opcional */}
-    Escolher Imagem
-  </label>
-  <input
-    type='file'
-    id='file-input'
-    className='file-input'
-    onChange={handleImageChange}
-  />
-  <input
-    className='message-input'
-    value={newMessage}
-    onChange={(e) => setNewMessage(e.target.value)}
-    placeholder='Enter your message...'
-  />
-  <button
-    className='send-button'
-    onClick={sendMessage}
-  >
-    Enviar
-  </button>
-</div>
-
+            <label htmlFor='file-input' className='file-input-label'>
+              <i className="fas fa-file"></i> {/* Ícone opcional */}
+              Escolher Arquivo
+            </label>
+            <input
+              type='file'
+              id='file-input'
+              className='file-input'
+              onChange={handleFileChange}
+            />
+            <input
+              className='message-input'
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder='Enter your message...'
+            />
+            <button
+              className='send-button'
+              onClick={sendMessage}
+            >
+              Enviar
+            </button>
+          </div>
 
           <button
             className='logout-button'
@@ -205,12 +205,31 @@ function App() {
                   <div className='message-content'>
                     <span className='message-username'>{msg.data.displayName}</span>
                     <p className='message-text'>{msg.data.text}</p>
-                    {msg.data.imageUrl && (
-                      <img
-                        className='message-image'
-                        src={msg.data.imageUrl}
-                        alt='Sent'
-                      />
+                    {msg.data.fileUrl && (
+                      msg.data.fileType.startsWith('image/') ? (
+                        <img
+                          className='message-file'
+                          src={msg.data.fileUrl}
+                          alt='Sent'
+                        />
+                      ) : msg.data.fileType.startsWith('video/') ? (
+                        <video
+                          className='message-file'
+                          controls
+                        >
+                          <source src={msg.data.fileUrl} type={msg.data.fileType} />
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : (
+                        <a
+                          className='message-file'
+                          href={msg.data.fileUrl}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                        >
+                          Download Arquivo
+                        </a>
+                      )
                     )}
                   </div>
                 </div>
